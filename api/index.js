@@ -146,9 +146,11 @@ app.get("/getcmd/:username", (req, res) => {
     delete commandStore[user];
     return res.send(cmd);
   }
-  
+
   if (commandStore["_playerlist"]) {
-    return res.send(commandStore["_playerlist"]);
+    const cmd = commandStore["_playerlist"];
+    delete commandStore["_playerlist"];
+    return res.send(cmd);
   }
 
   res.send({ action: "none" });
