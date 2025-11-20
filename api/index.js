@@ -39,7 +39,7 @@ app.post("/webhook/:token", async (req, res) => {
   if (!target && !["/start", "/playerlist"].includes(cmd)) {
     await axios.post(`${TAPI}/sendMessage`, {
       chat_id: chatId,
-      text: `Format salah. Contoh:\n/${cmd} username`
+      text: `Format salah. Contoh:\n${cmd} username`
     });
     return res.send("ok");
   }
