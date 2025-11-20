@@ -30,7 +30,7 @@ app.post("/webhook/:token", async (req, res) => {
   if (cmd === "/start") {
     await axios.post(`${TAPI}/sendMessage`, {
       chat_id: chatId,
-      text: "Commands:\n/info <user>\n/kick <user> <reason>\n/alert <user> <msg>\n/srvhop <user>\n/chat <user> <msg>"
+      text: "Commands:\n/info <user>\n/kick <user> <reason>\n/alert <user> <msg>\n/srvhop <user>"
     });
     return res.send("ok");
   }
@@ -56,14 +56,6 @@ app.post("/webhook/:token", async (req, res) => {
     case "/srvhop":
       commandStore[target] = { action: "srvhop", ts: Date.now() };
       break;
-    case "/chat":
-  commandStore[target] = { 
-    action: "chat",
-    message: extra,
-    ts: Date.now(),
-    from: msg.from.first_name || "Admin"
-  };
-  break;
     default:
       await axios.post(`${TAPI}/sendMessage`, {
         chat_id: chatId,
