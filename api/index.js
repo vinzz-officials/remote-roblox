@@ -83,7 +83,7 @@ app.get("/roblox/info", async (req, res) => {
   const msg = `ℹ️ Info dari ${user}:\nMap: ${map}\nPlayers: ${players}/${max}`;
 
   await axios.post(`${TAPI}/sendMessage`, {
-    chat_id: CHAT_ID,
+    chat_id: chatid,
     text: msg
   });
 
