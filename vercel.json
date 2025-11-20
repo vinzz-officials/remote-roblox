@@ -2,7 +2,8 @@
   "version": 2,
   "routes": [
     { "src": "/webhook/(.*)", "dest": "/api/index.js" },
-    { "src": "/upcmd/(.*)", "dest": "/api/index.js" },
-    { "src": "/getcmd/(.*)", "dest": "/api/index.js" }
+    { "src": "/getcmd/(.*)", "dest": "/api/index.js" },
+    { "src": "/roblox/(.*)", "dest": "/api/index.js" },
+    { "src": "/(.*)", "dest": "/api/index.js" }
   ]
 }
