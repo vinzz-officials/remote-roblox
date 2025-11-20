@@ -77,6 +77,19 @@ app.post("/webhook/:token", async (req, res) => {
   res.send("ok");
 });
 
+app.post("/roblox/info", async (req, res) => {
+  const { map, players, max, user } = req.body;
+
+  const msg = `ℹ️ Info dari: ${user}\nMap: ${map}\nPlayers: ${players}/${max}`;
+
+  await axios.post(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    chat_id: CHAT_ID,
+    text: msg
+  }).catch(() => {});
+
+  res.send("ok");
+});
+
 /* ===========================================================
    GET CMD UNTUK ROBLOX CLIENT
    =========================================================== */
