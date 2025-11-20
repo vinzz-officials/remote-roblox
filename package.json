@@ -1,0 +1,11 @@
+{
+  "name": "roblox-relay-server",
+  "version": "1.0.0",
+  "main": "api/index.js",
+  "type": "module",
+  "dependencies": {
+    "express": "latest",
+    "body-parser": "latest",
+    "axios": "latest"
+  }
+}
