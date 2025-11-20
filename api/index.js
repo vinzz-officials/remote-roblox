@@ -6,6 +6,7 @@ const app = express();
 app.use(bodyParser.json());
 
 const commandStore = {}; // Simpan per-user
+const availableCmds = ["/kick", "/alert", "/srvhop", "/info", "/playerlist", "/start"];
 
 /* ===========================================================
    WEBHOOK TELEGRAM
@@ -24,9 +25,18 @@ app.post("/webhook/:token", async (req, res) => {
   const parts = text.split(" ");
   const cmd = parts[0].toLowerCase();
   const target = parts[1];
-  const reason = parts.slice(2).join(" ") || "No reason";
+  const extra = parts.slice(2).join(" ") || "";
 
-  if (!target) {
+  // /start => list all commands
+  if (cmd === "/start") {
+    await axios.post(`${TAPI}/sendMessage`, {
+      chat_id: chatId,
+      text: `✅ Available commands:\n${availableCmds.join("\n")}`
+    });
+    return res.send("ok");
+  }
+
+  if (!target && !["/start", "/playerlist"].includes(cmd)) {
     await axios.post(`${TAPI}/sendMessage`, {
       chat_id: chatId,
       text: "Format salah. Contoh:\n/kick username alasan"
@@ -34,40 +44,37 @@ app.post("/webhook/:token", async (req, res) => {
     return res.send("ok");
   }
 
-  // simpan command
-  if (cmd === "/kick") {
-    commandStore[target] = { action: "kick", reason, ts: Date.now() };
-  }
-
-  if (cmd === "/alert") {
-    commandStore[target] = { action: "alert", message: reason, ts: Date.now() };
-  }
-
-  if (cmd === "/srvhop") {
-    commandStore[target] = { action: "srvhop", ts: Date.now() };
-  }
-
-  if (cmd === "/info") {
-    commandStore[target] = { action: "info", ts: Date.now() };
+  // Simpan command
+  switch (cmd) {
+    case "/kick":
+      commandStore[target] = { action: "kick", reason: extra, ts: Date.now() };
+      break;
+    case "/alert":
+      commandStore[target] = { action: "alert", message: extra || "No message", ts: Date.now() };
+      break;
+    case "/srvhop":
+      commandStore[target] = { action: "srvhop", ts: Date.now() };
+      break;
+    case "/info":
+      commandStore[target] = { action: "info", ts: Date.now() };
+      break;
+    case "/playerlist":
+      commandStore[target] = { action: "playerlist", ts: Date.now() };
+      break;
+    default:
+      await axios.post(`${TAPI}/sendMessage`, {
+        chat_id: chatId,
+        text: `Command '${cmd}' tidak dikenali`
+      });
+      return res.send("ok");
   }
 
   await axios.post(`${TAPI}/sendMessage`, {
     chat_id: chatId,
-    text: `Command '${cmd}' stored for user: ${target}`
+    text: `Command '${cmd}' stored for user: ${target || "all"}`
   });
 
   res.send("ok");
-});
-
-/* ===========================================================
-   MANUAL TEST INPUT CMD
-   =========================================================== */
-app.post("/upcmd/:token", (req, res) => {
-  const { username, cmd } = req.body;
-  if (!username || !cmd) return res.send({ error: "Invalid" });
-
-  commandStore[username] = cmd;
-  res.send({ stored: true });
 });
 
 /* ===========================================================
