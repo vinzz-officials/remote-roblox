@@ -77,15 +77,15 @@ app.post("/webhook/:token", async (req, res) => {
   res.send("ok");
 });
 
-app.post("/roblox/info", async (req, res) => {
-  const { map, players, max, user } = req.body;
+app.get("/roblox/info", async (req, res) => {
+  const { user, map, players, max } = req.query;
 
-  const msg = `ℹ️ Info dari: ${user}\nMap: ${map}\nPlayers: ${players}/${max}`;
+  const msg = `ℹ️ Info dari ${user}:\nMap: ${map}\nPlayers: ${players}/${max}`;
 
-  await axios.post(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+  await axios.post(`${TAPI}/sendMessage`, {
     chat_id: CHAT_ID,
     text: msg
-  }).catch(() => {});
+  });
 
   res.send("ok");
 });
