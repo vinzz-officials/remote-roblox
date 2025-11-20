@@ -5,94 +5,141 @@ import axios from "axios";
 const app = express();
 app.use(bodyParser.json());
 
-const commandStore = {}; // Simpan per-user
-const availableCmds = ["/kick", "/alert", "/srvhop", "/info", "/playerlist", "/start"];
+/* ============================================
+   STORE
+=============================================== */
+const commandStore = {};      // per-user commands
+const chatIdStore = {};       // per-bot chat id storage
+const availableCmds = [
+  "/kick <user> <reason>",
+  "/alert <user> <msg>",
+  "/srvhop <user>",
+  "/info <user>",
+  "/playerlist <user>",
+  "/start"
+];
 
 /* ===========================================================
-   WEBHOOK TELEGRAM
-   =========================================================== */
+   TELEGRAM WEBHOOK  
+   Token taken from URL → /webhook/:token
+=========================================================== */
 app.post("/webhook/:token", async (req, res) => {
-  const TOKEN = req.params.token;
-  const TAPI = `https://api.telegram.org/bot${TOKEN}`;
-  const msg = req.body.message;
+  const BOT_TOKEN = req.params.token;
+  const TAPI = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
+  const msg = req.body.message;
   if (!msg || !msg.text) return res.send("ok");
+
   const chatId = msg.chat.id;
   const text = msg.text.trim();
+
+  // simpan chatId berdasarkan token
+  chatIdStore[BOT_TOKEN] = chatId;
 
   if (!text.startsWith("/")) return res.send("ok");
 
   const parts = text.split(" ");
   const cmd = parts[0].toLowerCase();
-  const target = parts[1];
+  const target = parts[1] || null;
   const extra = parts.slice(2).join(" ") || "";
 
-  // /start => list all commands
+  // /start → list command
   if (cmd === "/start") {
     await axios.post(`${TAPI}/sendMessage`, {
       chat_id: chatId,
-      text: `✅ Available commands:\n${availableCmds.join("\n")}`
+      text: "Commands:\n" + availableCmds.join("\n")
     });
     return res.send("ok");
   }
 
-  if (!target && !["/start", "/playerlist"].includes(cmd)) {
+  // other commands need target
+  if (!target) {
     await axios.post(`${TAPI}/sendMessage`, {
       chat_id: chatId,
-      text: "Format salah. Contoh:\n/kick username alasan"
+      text: "Format salah.\nContoh:\n/kick username reason"
     });
     return res.send("ok");
   }
 
-  // Simpan command
+  // simpan command
   switch (cmd) {
     case "/kick":
-      commandStore[target] = { action: "kick", reason: extra, ts: Date.now() };
+      commandStore[target] = { action: "kick", reason: extra, ts: Date.now(), token: BOT_TOKEN };
       break;
+
     case "/alert":
-      commandStore[target] = { action: "alert", message: extra || "No message", ts: Date.now() };
+      commandStore[target] = { action: "alert", message: extra, ts: Date.now(), token: BOT_TOKEN };
       break;
+
     case "/srvhop":
-      commandStore[target] = { action: "srvhop", ts: Date.now() };
+      commandStore[target] = { action: "srvhop", ts: Date.now(), token: BOT_TOKEN };
       break;
+
     case "/info":
-      commandStore[target] = { action: "info", ts: Date.now() };
+      commandStore[target] = { action: "info", ts: Date.now(), token: BOT_TOKEN };
       break;
+
     case "/playerlist":
-      commandStore[target] = { action: "playerlist", ts: Date.now() };
+      commandStore[target] = { action: "playerlist", ts: Date.now(), token: BOT_TOKEN };
       break;
+
     default:
       await axios.post(`${TAPI}/sendMessage`, {
         chat_id: chatId,
-        text: `Command '${cmd}' tidak dikenali`
+        text: `Command '${cmd}' tidak dikenal.`
       });
       return res.send("ok");
   }
 
+  // feedback
   await axios.post(`${TAPI}/sendMessage`, {
     chat_id: chatId,
-    text: `Command '${cmd}' stored for user: ${target || "all"}`
+    text: `Command '${cmd}' stored for: ${target}`
   });
 
   res.send("ok");
 });
 
-app.get("/roblox/info", async (req, res) => {
-  const { user, map, players, max } = req.query;
 
-  const msg = `ℹ️ Info dari ${user}:\nMap: ${map}\nPlayers: ${players}/${max}`;
+/* ===========================================================
+   CLIENT SEND INFO → TELEGRAM
+=========================================================== */
+app.get("/roblox/info", async (req, res) => {
+  const { user, map, players, max, token } = req.query;
+
+  const TAPI = `https://api.telegram.org/bot${token}`;
+  const CHAT_ID = chatIdStore[token];
 
   await axios.post(`${TAPI}/sendMessage`, {
     chat_id: CHAT_ID,
-    text: msg
+    text: `ℹ️ INFO DARI ${user}\n🗺 Map: ${map}\n👥 Players: ${players}/${max}`
   });
 
   res.send("ok");
 });
 
+
 /* ===========================================================
-   GET CMD UNTUK ROBLOX CLIENT
-   =========================================================== */
+   CLIENT SEND PLAYERLIST → TELEGRAM
+=========================================================== */
+app.get("/roblox/playerlist", async (req, res) => {
+  const { user, list, token } = req.query;
+
+  const TAPI = `https://api.telegram.org/bot${token}`;
+  const CHAT_ID = chatIdStore[token];
+
+  await axios.post(`${TAPI}/sendMessage`, {
+    chat_id: CHAT_ID,
+    text: `📜 PLAYER LIST DARI ${user}\n${list}`
+  });
+
+  res.send("ok");
+});
+
+
+/* ===========================================================
+   CLIENT FETCH COMMAND
+=========================================================== */
 app.get("/getcmd/:username", (req, res) => {
   const username = req.params.username;
 
@@ -106,11 +153,12 @@ app.get("/getcmd/:username", (req, res) => {
   res.send(cmd);
 });
 
+
 /* ===========================================================
    DEFAULT ROUTE
-   =========================================================== */
+=========================================================== */
 app.get("/", (req, res) => {
-  res.send("🔥 Roblox Command Relay Active");
+  res.send("🔥 Command Relay Active (Token from URL Enabled)");
 });
 
 export default app;
