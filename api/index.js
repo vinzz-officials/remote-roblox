@@ -30,7 +30,7 @@ app.post("/webhook/:token", async (req, res) => {
   if (cmd === "/start") {
     await axios.post(`${TAPI}/sendMessage`, {
       chat_id: chatId,
-      text: "Commands:\n/info <user>\n/kick <user> <reason>\n/alert <user> <msg>\n/srvhop <user>"
+      text: "Commands:\n/info <user>\n/kick <user> <reason>\n/alert <user> <msg>\n/srvhop <user>\n/run <username> <code>"
     });
     return res.send("ok");
   }
